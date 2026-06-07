@@ -1,0 +1,14 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# API Credentials & Secrets
+.env
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Local vector database storage (Optional, but safe if you want others to re-ingest)
+# faiss_index/

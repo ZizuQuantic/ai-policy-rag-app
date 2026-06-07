@@ -1,0 +1,11 @@
+python-dotenv
+langchain==0.3.*
+langchain-core==0.3.*
+langchain-text-splitters
+langchain-openai
+langchain-community
+faiss-cpu
+numpy==1.26.4
+streamlit
+pypdf
+docx2txt
