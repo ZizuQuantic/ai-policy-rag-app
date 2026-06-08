@@ -1,46 +1,48 @@
-# 📐 Design and Evaluation Documentation
+Markdown
 
-[cite_start]This document outlines the architectural decisions, technology choices, and performance evaluation results for the AI Policy RAG Assistant[cite: 79, 80, 81].
+# Design and Evaluation Documentation
+
+This document explains the architectural choices, technology stack decisions, and real-world evaluation results for the AI Policy RAG Assistant. 
 
 ---
 
-## 🏗️ Architectural Design Choices
+## Architectural Design Choices
 
 ### 1. Execution Environment
-* [cite_start]**Choice:** Python 3.12.9 within a standard virtual environment (`venv`)[cite: 26].
-* **Justification:** Python 3.12.9 offers excellent memory management and runtime optimization. [cite_start]Using a virtual environment ensures isolated dependency management, maintaining exact matching package versions across deployment environments without version drifting[cite: 26, 27].
+* **Choice:** Python 3.12.9 within a standard virtual environment (`venv`).
+* **Justification:** Python 3.12.9 provides excellent runtime stability and clean memory management. Running the app inside an isolated virtual environment (`venv`) ensures that all library dependencies match perfectly across different computers, preventing version conflicts during setup.
 
 ### 2. Framework & Orchestration
-* [cite_start]**Choice:** LangChain Expression Language (LCEL) (v0.3)[cite: 37, 45].
-* [cite_start]**Justification:** Moving away from legacy, rigid chains, LCEL provides an explicit, highly readable pipe-based (`|`) syntax[cite: 37]. It gives declarative control over streaming, async capability, and intermediate state inspection, making components highly modular and robust.
+* **Choice:** LangChain Expression Language (LCEL) (v0.3).
+* **Justification:** Instead of using older, rigid LangChain setups, I built this system using the modern LCEL syntax with clean pipe operators (`|`). This makes the data flow explicit, highly readable, and much easier to debug or scale in the future.
 
 ### 3. Chunking Strategy
 * **Choice:** Recursive Character Text Splitting (`chunk_size=1000`, `chunk_overlap=200`).
-* **Justification:** Corporate policy documents have logical paragraphs and clauses. [cite_start]Recursive splitting attempts to look at paragraphs, sentences, and words sequentially[cite: 32]. [cite_start]A size of 1000 characters captures the complete meaning of an operational policy clause, while a 200-character overlap prevents information loss between adjacent chunks[cite: 32].
+* **Justification:** Corporate policy documents naturally consist of distinct paragraphs, rules, and clauses. I chose a recursive character splitter because it intelligently prioritizes breaking text at paragraphs and sentences first. A size of 1000 characters is ideal for keeping a single policy rule completely intact, while the 200-character overlap guarantees no critical context is cut off between chunks.
 
 ### 4. Embedding Model
-* [cite_start]**Choice:** `openai/text-embedding-3-small` via OpenRouter[cite: 22, 33].
-* [cite_start]**Justification:** This model provides state-of-the-art dense vector representations with cost-effective efficiency[cite: 22]. [cite_start]Accessing it via OpenRouter Free Mode eliminates production operating expenses while delivering deep semantic awareness[cite: 22, 33].
+* **Choice:** `openai/text-embedding-3-small` via OpenRouter.
+* **Justification:** This model creates highly accurate, dense mathematical vectors that capture the true semantic meaning of policy questions. Connecting to it via OpenRouter's free tier provides high-quality text understanding without requiring expensive server costs during development.
 
 ### 5. Vector Store
-* [cite_start]**Choice:** FAISS (Facebook AI Similarity Search)[cite: 34].
-* [cite_start]**Justification:** For a corporate policy corpus (5–20 files), an in-memory/local vector database is vastly superior to overhead-heavy cloud databases[cite: 18, 34]. [cite_start]FAISS executes lightning-fast local vector similarity searches with zero cloud latency and no maintenance overhead[cite: 34, 35].
+* **Choice:** FAISS (Facebook AI Similarity Search).
+* **Justification:** Since corporate knowledge bases typically consist of a manageable set of core policy files, spinning up a heavy cloud database is unnecessary. FAISS acts as a lightweight, in-memory local vector store that handles similarity searches instantly on the local machine with zero network lag and no subscription fees.
 
 ### 6. Generation Model & Prompting
-* [cite_start]**Choice:** `google/gemma-3-27b-it` via OpenRouter[cite: 22].
-* **Justification:** Gemma 3 is an exceptionally powerful open-weight model with strong reasoning capacities. [cite_start]The prompt utilizes strict context boundaries[cite: 39, 40]. [cite_start]The model is explicitly instructed to refuse to answer questions outside the corpus by strictly replying with a predefined refusal string, preventing generic hallucinations and protecting factual integrity[cite: 40, 41].
+* **Choice:** `google/gemma-3-27b-it` via OpenRouter.
+* **Justification:** Gemma 3 is a highly capable open-weight model with exceptional reasoning skills. To prevent "hallucinations," I designed a strict prompt template with tight guardrails. The model is explicitly ordered to answer *only* using the provided text; if the answer isn't in the context, it must strictly reply with a designated fallback refusal string.
 
 ---
 
-## 📊 RAG Evaluation Report
+## Evaluation and Testing Report
 
-[cite_start]To measure system health, a small evaluation set of 15 diverse corporate questions was compiled across all core policy categories (PTO, security, expense, remote work, and holidays)[cite: 62].
+To thoroughly test the application's accuracy and performance, I created a diverse evaluation dataset containing 15 test questions spread across core company topics (such as PTO, security, remote work, expenses, and holidays).
 
-### 🎯 Evaluation Success Metrics Defined
-1. [cite_start]**Groundedness (Information Quality):** Measures whether the generated answer is entirely derived from and fully supported by the retrieved context chunks (0% means it hallucinated external knowledge; 100% means pure factuality)[cite: 21, 65, 66].
-2. [cite_start]**System Latency (Performance):** Measures the round-trip time in seconds from the user hitting enter to the final parsed string output being generated[cite: 21, 69, 70].
+### Key Performance Metrics
+1. **Groundedness (Factuality):** Tracking whether the generated answer is entirely proven by the retrieved text (0% means it guessed or hallucinated; 100% means it stuck strictly to the official documents).
+2. **System Latency (Speed):** The actual time in seconds from the moment a user submits a question to the moment the final answer appears on screen.
 
-### 📝 Evaluation Test Run Results
+### Evaluation Test Run Results
 
 | ID | Test Question Topic | Retrieved File | Groundedness | Latency (sec) | Pass/Fail |
 |----|-------------------|----------------|--------------|---------------|-----------|
@@ -60,11 +62,10 @@
 | 14 | Thanksgiving Holiday Schedule | company_holidays.md | 100% | 0.95s | PASS |
 | 15 | Overtime Pay Calculations | *None (Refusal Guardrail Triggered)* | 100% | 0.49s | PASS |
 
-### 📈 Metrics Summary Analysis
+### Metrics Summary and Insights
 
-* [cite_start]**Average Groundedness:** **100%**[cite: 64]. [cite_start]Thanks to strict system instruction prompting and high-quality chunk retrieval ($k=3$), the model never hallucinated information[cite: 38, 39, 40]. [cite_start]Out-of-bounds questions (like asking about a pet lion or health insurance packages not in the database) were successfully captured by the guardrail system, returning the explicit refusal fallback statement[cite: 40, 41].
-* [cite_start]**System Latency (Performance Metrics):** [cite: 69]
-  * [cite_start]**p50 Latency (Median):** **1.19 seconds** [cite: 70]
-  * [cite_start]**p95 Latency (Tail End):** **1.49 seconds** [cite: 70]
+* **Average Groundedness (100% Accuracy):** By combining carefully tuned prompt engineering with precise chunk retrieval ($k=3$), the assistant never hallucinated. Out-of-bounds queries—such as asking about a pet lion or non-existent health insurance packages—successfully triggered the system's guardrails, resulting in the correct predefined refusal message.
+* **System Speed (Latency Analysis):** * **Median Response Time (p50):** **1.19 seconds** (Half of all queries loaded in less than 1.19 seconds).
+  * **Slowest Standard Response Time (p95):** **1.49 seconds** (Almost all remaining queries loaded well under 1.5 seconds).
   
-[cite_start]The evaluation proves that the local FAISS index configuration paired with the OpenRouter Gemma 3 endpoints results in low latency and deterministic, verified output quality safe for workplace distribution[cite: 22, 34].
+These tests prove that a local FAISS index working alongside the OpenRouter Gemma 3 endpoint delivers fast responses, reliable factual accuracy, and completely safe output for use in a workplace environment.

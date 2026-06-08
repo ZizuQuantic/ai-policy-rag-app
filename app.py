@@ -5,6 +5,36 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+import streamlit as st
+import random  # Make sure this has its own line!
+
+# Keywords that look like a "Thank you" message
+THANK_YOU_KEYWORDS = [
+    "thank you", "thanks", "thx", "thank you so much", 
+    "thank you!", "appreciate it", "many thanks"
+]
+
+# Single-line responses for your RAG Assistant
+THANK_YOU_RESPONSES = [
+    "You are very welcome! Please let me know if you have any other questions about the policy.",
+    "I am glad I could be of assistance. Let me know if you need help finding anything else!",
+    "Happy to help! Feel free to ask if any other policy details require clarification.",
+    "My pleasure! I am here whenever you need further assistance with our documentation.",
+    "No problem at all! Happy to help. 😊"
+]
+
+def check_for_thanks(user_input: str) -> str | None:
+    """
+    Checks if the user input is a 'thank you' phrase.
+    Returns a random friendly response if true, or None if it's a regular query.
+    """
+    # Clean the input: lowercase and remove basic punctuation trailing spaces
+    cleaned_input = user_input.lower().strip().strip("!.,")
+    
+    if cleaned_input in THANK_YOU_KEYWORDS:
+        return random.choice(THANK_YOU_RESPONSES)
+    
+    return None
 
 # Load environment variables
 load_dotenv()
@@ -90,6 +120,19 @@ def main():
                 print("Exiting RAG System. Goodbye!")
                 break
 
+            # -------------------------------------------------------------
+            # STEP 3 INTERCEPTION: Check for "Thank You" messages first
+            # -------------------------------------------------------------
+            thank_you_reply = check_for_thanks(user_query)
+            
+            if thank_you_reply:
+                # If they said thank you, print the phrase instantly and skip the LLM
+                print(f"\nAnswer: {thank_you_reply}")
+                print("-" * 60)
+                continue
+            # -------------------------------------------------------------
+
+            # This part only runs if they didn't say "Thank You"
             print("Searching context and generating answer...")
             response = rag_chain.invoke(user_query)
             print(f"\nAnswer: {response}")
